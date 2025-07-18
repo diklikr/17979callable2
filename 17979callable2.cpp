@@ -32,11 +32,16 @@ bool ordenarPorFechaDesc(const Item& a, const Item& b) { return a.fecha > b.fech
 bool ordenarPorSKUDesc(const Item& a, const Item& b) { return a.SKU > b.SKU; }
 
 std::vector<Item> baseDatos = {
-           {"A101", "Mouse Inalámbrico", "2024-10-01", 1599, 15},
-           {"B202", "Teclado Mecánico", "2024-09-15", 5499, 10},
-           {"C303", "Monitor 24\"", "2024-07-01", 28999, 5},
+           {"A101", "Mouse Inalambrico", "2024-10-01", 1599, 15},
+           {"B202", "Teclado Mecanico", "2024-09-15", 5499, 10},
+           {"C303", "Monitor 24", "2024-07-01", 28999, 5},
            {"D404", "Cable HDMI", "2025-01-20", 799, 50},
-           {"E505", "Laptop i7", "2023-12-11", 99999, 3}
+           {"E505", "Laptop i7", "2023-12-11", 99999, 3},
+           { "F606", "Webcam Full HD",    "2024-11-05", 3499, 20 },
+           {"G707", "Disco SSD 1TB",     "2025-03-12", 64999, 8},
+           {"H808", "Auriculares Gamer", "2024-08-19", 4599, 12},
+           {"I909", "Silla Ergonomica",  "2024-06-30", 89999, 4},
+           {"J010", "Router WiFi 6",     "2024-09-01", 12999, 9}
 };
 
 int sumar(int a, int b)
@@ -101,7 +106,25 @@ bool ordenarPorMagnitud(const vector2d& a, const vector2d& b)
     return a.x + a.y < b.x + b.y;
 }
 
+void imprimirItems(const std::vector<Item>& items) {
+    std::cout << std::left
+        << std::setw(10) << "SKU"
+        << std::setw(20) << "Nombre"
+        << std::setw(12) << "Fecha"
+        << std::setw(10) << "Precio"
+        << std::setw(8) << "Stock"
+        << "\n";
 
+    for (const auto& item : items) {
+        std::cout << std::left
+            << std::setw(10) << item.SKU
+            << std::setw(20) << item.nombre
+            << std::setw(12) << item.fecha
+            << std::setw(10) << std::fixed << std::setprecision(2) << (item.precioCentavos / 100.0)
+            << std::setw(8) << item.stock
+            << "\n";
+    }
+}
 
 int main(int argc, char** argv)
 {
@@ -148,17 +171,47 @@ int main(int argc, char** argv)
     LOG("Counter1: " << counter1.count);
     LOG("Counter2: " << counter2.count);
 
-    //imprimir items
-    std::vector<Item> baseDatos = {
-        {"A101", "Mouse Inalámbrico", "2024-10-01", 1599, 15},
-        {"B202", "Teclado Mecánico", "2024-09-15", 5499, 10},
-        {"C303", "Monitor 24\"", "2024-07-01", 28999, 5},
-        {"D404", "Cable HDMI", "2025-01-20", 799, 50},
-        {"E505", "Laptop i7", "2023-12-11", 99999, 3}
-    };
 
-    // Comparador por defecto (ninguno)
+    
     bool (*comparador)(const Item&, const Item&) = nullptr;
+
+    // Mostrar menú de ordenamiento
+    std::cout << "Selecciona el criterio de ordenamiento:\n";
+    std::cout << "1. Nombre Ascendente\n";
+    std::cout << "2. Nombre Descendente\n";
+    std::cout << "3. Precio Ascendente\n";
+    std::cout << "4. Precio Descendente\n";
+    std::cout << "5. Stock Ascendente\n";
+    std::cout << "6. Stock Descendente\n";
+    std::cout << "7. Fecha Ascendente\n";
+    std::cout << "8. Fecha Descendente\n";
+    std::cout << "9. SKU Ascendente\n";
+    std::cout << "10. SKU Descendente\n";
+    std::cout << "Opción: ";
+
+    int opcion;
+    std::cin >> opcion;
+
+    switch (opcion) {
+    case 1: comparador = ordenarPorNombreAsc; break;
+    case 2: comparador = ordenarPorNombreDesc; break;
+    case 3: comparador = ordenarPorPrecioAsc; break;
+    case 4: comparador = ordenarPorPrecioDesc; break;
+    case 5: comparador = ordenarPorStockAsc; break;
+    case 6: comparador = ordenarPorStockDesc; break;
+    case 7: comparador = ordenarPorFechaAsc; break;
+    case 8: comparador = ordenarPorFechaDesc; break;
+    case 9: comparador = ordenarPorSKUAsc; break;
+    case 10: comparador = ordenarPorSKUDesc; break;
+    default:
+        std::cerr << "Opción no válida. Mostrando sin ordenar.\n";
+        break;
+    }
+
+    // Ordenar si se definió criterio
+    if (comparador) {
+        std::sort(baseDatos.begin(), baseDatos.end(), comparador);
+    }
 
     // Analizar argumentos
     if (argc > 1) {
@@ -191,7 +244,7 @@ int main(int argc, char** argv)
             std::sort(baseDatos.begin(), baseDatos.end(), comparador);
         }
     }
-
+    imprimirItems(baseDatos);
     // Imprimir la tabla
     
 
@@ -254,7 +307,7 @@ int main(int argc, char** argv)
         }
         filterToApply(argv[1]);
     }
-    imprimirItems(baseDatos);
+    
 
     return 0;
 }
