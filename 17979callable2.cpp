@@ -171,48 +171,55 @@ int main(int argc, char** argv)
     LOG("Counter1: " << counter1.count);
     LOG("Counter2: " << counter2.count);
 
-
+    imprimirItems(baseDatos);
+    
     
     bool (*comparador)(const Item&, const Item&) = nullptr;
+    while (true) {
+        // Mostrar menú de ordenamiento
+        std::cout << "Selecciona el criterio de ordenamiento:\n";
+        std::cout << "1. Nombre Ascendente\n";
+        std::cout << "2. Nombre Descendente\n";
+        std::cout << "3. Precio Ascendente\n";
+        std::cout << "4. Precio Descendente\n";
+        std::cout << "5. Stock Ascendente\n";
+        std::cout << "6. Stock Descendente\n";
+        std::cout << "7. Fecha Ascendente\n";
+        std::cout << "8. Fecha Descendente\n";
+        std::cout << "9. SKU Ascendente\n";
+        std::cout << "10. SKU Descendente\n";
+        std::cout << "Opcion: ";
 
-    // Mostrar menú de ordenamiento
-    std::cout << "Selecciona el criterio de ordenamiento:\n";
-    std::cout << "1. Nombre Ascendente\n";
-    std::cout << "2. Nombre Descendente\n";
-    std::cout << "3. Precio Ascendente\n";
-    std::cout << "4. Precio Descendente\n";
-    std::cout << "5. Stock Ascendente\n";
-    std::cout << "6. Stock Descendente\n";
-    std::cout << "7. Fecha Ascendente\n";
-    std::cout << "8. Fecha Descendente\n";
-    std::cout << "9. SKU Ascendente\n";
-    std::cout << "10. SKU Descendente\n";
-    std::cout << "Opción: ";
+        int opcion;
+        std::cin >> opcion;
 
-    int opcion;
-    std::cin >> opcion;
+        if (opcion == 0) {
+            std::cout << "Saliendo...\n";
+            break;
+        }
 
-    switch (opcion) {
-    case 1: comparador = ordenarPorNombreAsc; break;
-    case 2: comparador = ordenarPorNombreDesc; break;
-    case 3: comparador = ordenarPorPrecioAsc; break;
-    case 4: comparador = ordenarPorPrecioDesc; break;
-    case 5: comparador = ordenarPorStockAsc; break;
-    case 6: comparador = ordenarPorStockDesc; break;
-    case 7: comparador = ordenarPorFechaAsc; break;
-    case 8: comparador = ordenarPorFechaDesc; break;
-    case 9: comparador = ordenarPorSKUAsc; break;
-    case 10: comparador = ordenarPorSKUDesc; break;
-    default:
-        std::cerr << "Opción no válida. Mostrando sin ordenar.\n";
-        break;
+        switch (opcion) {
+        case 1: comparador = ordenarPorNombreAsc; break;
+        case 2: comparador = ordenarPorNombreDesc; break;
+        case 3: comparador = ordenarPorPrecioAsc; break;
+        case 4: comparador = ordenarPorPrecioDesc; break;
+        case 5: comparador = ordenarPorStockAsc; break;
+        case 6: comparador = ordenarPorStockDesc; break;
+        case 7: comparador = ordenarPorFechaAsc; break;
+        case 8: comparador = ordenarPorFechaDesc; break;
+        case 9: comparador = ordenarPorSKUAsc; break;
+        case 10: comparador = ordenarPorSKUDesc; break;
+        default:
+            std::cerr << "Opción no válida. Mostrando sin ordenar.\n";
+            break;
+        }
+
+        // Ordenar si se definió criterio
+        if (comparador) {
+            std::sort(baseDatos.begin(), baseDatos.end(), comparador);
+        }
+        imprimirItems(baseDatos);
     }
-
-    // Ordenar si se definió criterio
-    if (comparador) {
-        std::sort(baseDatos.begin(), baseDatos.end(), comparador);
-    }
-
     // Analizar argumentos
     if (argc > 1) {
         std::string orden = argv[1]; // Ejemplo: orden=nombre, orden=precio-desc
@@ -244,7 +251,7 @@ int main(int argc, char** argv)
             std::sort(baseDatos.begin(), baseDatos.end(), comparador);
         }
     }
-    imprimirItems(baseDatos);
+    
     // Imprimir la tabla
     
 
