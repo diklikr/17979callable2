@@ -6,7 +6,12 @@
 #include <algorithm>
 #include <iomanip>
 #include <string>
+#include <curl/curl.h>
+#include <nlohmann/json.hpp>
+using json = nlohmann::json;
+
 #define LOG(x) std::cout << x << std::endl
+#define API_ENDPOINT "http://monsterballgo.com/api/inventario"
 
 // Estructura que representa un ítem
 struct Item {
@@ -125,7 +130,79 @@ void imprimirItems(const std::vector<Item>& items) {
             << "\n";
     }
 }
+void exportarCSV(const std::vector<Item>& items, const std::string& filename) {
+    std::ofstream out(filename);
+    if (!out) {
+        std::cerr << "Error al abrir archivo para exportar.\n";
+        return;
+    }
 
+    out << "SKU,Nombre,Fecha,Precio,Stock\n";
+    for (const auto& item : items) {
+        out << "\"" << item.SKU << "\","
+            << "\"" << item.nombre << "\","
+            << item.fecha << ","
+            << std::fixed << std::setprecision(2) << item.precioCentavos / 100.0 << ","
+            << item.stock << "\n";
+    }
+
+    std::cout << "Inventario exportado como " << filename << "\n";
+}
+size_t writefunction(void* ptr, size_t size, size_t nmemb, void* userdata)
+{
+    std::cout << "Recibiendo data..." << std::endl;
+    size_t totalSize = size * nmemb;
+    std::string* str = static_cast<std::string*>(userdata);
+    str->append(static_cast<char*>(ptr), totalSize);
+    return totalSize;
+}
+std::vector<Item> obtenerInventarioDesdeAPI()
+{
+    std::vector<Item> inventario;
+    CURL* curl = curl_easy_init();
+    CURLcode res;
+    std::string response;
+
+    if (!curl) {
+        std::cerr << "Error al inicializar CURL\n";
+        return inventario;
+    }
+
+    curl_easy_setopt(curl, CURLOPT_URL, API_ENDPOINT);
+    curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, writefunction);
+    curl_easy_setopt(curl, CURLOPT_WRITEDATA, &response);
+    res = curl_easy_perform(curl);
+    curl_easy_cleanup(curl);
+
+    if (res != CURLE_OK) {
+        std::cerr << "Error en la petición: " << curl_easy_strerror(res) << "\n";
+        return inventario;
+    }
+
+    try {
+        json j = json::parse(response);
+        if (!j.contains("inventario")) {
+            std::cerr << "JSON inválido.\n";
+            return inventario;
+        }
+
+        for (const auto& obj : j["inventario"]) {
+            Item item;
+            item.SKU = obj.value("sku", "");
+            item.nombre = obj.value("name", "");
+            item.fecha = obj.value("date", "");
+            item.precioCentavos = obj.value("price", 0);
+            item.stock = obj.value("stock", 0);
+            inventario.push_back(item);
+        }
+
+    }
+    catch (const json::exception& e) {
+        std::cerr << "Error al parsear JSON: " << e.what() << "\n";
+    }
+
+    return inventario;
+}
 int main(int argc, char** argv)
 {
     int a = 5, b = 3;
@@ -314,7 +391,20 @@ int main(int argc, char** argv)
         }
         filterToApply(argv[1]);
     }
+    std::cout << "¿Deseas cargar inventario desde la API remota? (s/n): ";
+    char respuesta;
+    std::cin >> respuesta;
+    if (respuesta == 's' || respuesta == 'S') {
+        baseDatos = obtenerInventarioDesdeAPI();
+    }
     
+        std::cout << "¿Deseas exportar el inventario a CSV? (s/n): ";
+        std::cin >> respuesta;
+    if (respuesta == 's' || respuesta == 'S') {
+        exportarCSV(baseDatos, "inventario.csv");
+    }
+   
+
 
     return 0;
 }
