@@ -13,13 +13,31 @@ using json = nlohmann::json;
 #define LOG(x) std::cout << x << std::endl
 #define API_ENDPOINT "http://monsterballgo.com/api/inventario"
 
-// Estructura que representa un ítem
-struct Item {
-    std::string SKU;
-    std::string nombre;
-    std::string fecha; // formato: "YYYY-MM-DD"
-    int precioCentavos;
-    int stock;
+// Add the missing member declaration for SKU in the Item struct  
+struct Item {  
+   std::string SKU; // Ensure SKU is declared as a member of the Item struct  
+   std::string nombre;  
+   std::string fecha; // formato: "YYYY-MM-DD"  
+   int precioCentavos;  
+   int stock;  
+
+   void imprimirInventarioCSV(const std::vector<Item>& items, const std::string& filename) {  
+       std::ofstream file(filename);  
+       if (!file.is_open()) {  
+           std::cerr << "Error al abrir el archivo para escribir.\n";  
+           return;  
+       }  
+
+       file << "SKU,Nombre,Fecha,Precio,Stock\n";  
+       for (const auto& item : items) {  
+           file << '"' << item.SKU << "\","  
+               << '"' << item.nombre << "\","  
+               << '"' << item.fecha << "\","  
+               << (item.precioCentavos / 100.0) << ","  
+               << item.stock << "\n";  
+       }  
+       file.close();  
+   }  
 };
 
 // Funciones de comparación ascendente
@@ -36,19 +54,49 @@ bool ordenarPorStockDesc(const Item& a, const Item& b) { return a.stock > b.stoc
 bool ordenarPorFechaDesc(const Item& a, const Item& b) { return a.fecha > b.fecha; }
 bool ordenarPorSKUDesc(const Item& a, const Item& b) { return a.SKU > b.SKU; }
 
-std::vector<Item> baseDatos = {
-           {"A101", "Mouse Inalambrico", "2024-10-01", 1599, 15},
-           {"B202", "Teclado Mecanico", "2024-09-15", 5499, 10},
-           {"C303", "Monitor 24", "2024-07-01", 28999, 5},
-           {"D404", "Cable HDMI", "2025-01-20", 799, 50},
-           {"E505", "Laptop i7", "2023-12-11", 99999, 3},
-           { "F606", "Webcam Full HD",    "2024-11-05", 3499, 20 },
-           {"G707", "Disco SSD 1TB",     "2025-03-12", 64999, 8},
-           {"H808", "Auriculares Gamer", "2024-08-19", 4599, 12},
-           {"I909", "Silla Ergonomica",  "2024-06-30", 89999, 4},
-           {"J010", "Router WiFi 6",     "2024-09-01", 12999, 9}
-};
+std::vector<Item> cargarInventarioDesdeJSON(const json& j) {
+    std::vector<Item> baseDatos;
+    if (!j.contains("inventario") || !j["inventario"].is_array())
+        return baseDatos;
 
+    for (const auto& obj : j["inventario"]) {
+        Item item;
+        item.SKU = obj.value("sku", "");
+        item.nombre = obj.value("name", "");
+        item.fecha = obj.value("date", "");
+        item.precioCentavos = obj.value("price", 0);
+        item.stock = obj.value("stock", 0);
+        baseDatos.push_back(item);
+    }
+    return baseDatos;
+}
+//std::vector<Item> baseDatos = 
+//          /* {"A101", "Mouse Inalambrico", "2024-10-01", 1599, 15},
+//           {"B202", "Teclado Mecanico", "2024-09-15", 5499, 10},
+//           {"C303", "Monitor 24", "2024-07-01", 28999, 5},
+//           {"D404", "Cable HDMI", "2025-01-20", 799, 50},
+//           {"E505", "Laptop i7", "2023-12-11", 99999, 3},
+//           { "F606", "Webcam Full HD",    "2024-11-05", 3499, 20 },
+//           {"G707", "Disco SSD 1TB",     "2025-03-12", 64999, 8},
+//           {"H808", "Auriculares Gamer", "2024-08-19", 4599, 12},
+//           {"I909", "Silla Ergonomica",  "2024-06-30", 89999, 4},
+//           {"J010", "Router WiFi 6",     "2024-09-01", 12999, 9}*/
+////};
+void imprimirInventarioCSV(const std::vector<Item>& items, const std::string& filename) {
+    std::ofstream file{}(filename);
+    file << "SKU,Nombre,Fecha,Precio,Stock\n";
+    for (const auto& item : items) {
+        file << '"' << item.SKU << "\","
+            << '"' << item.nombre << "\","
+            << '"' << item.fecha << "\","
+            << (item.precioCentavos / 100.0) << ","
+            << item.stock << "\n";
+    }
+    file.close();
+    // Add a global declaration for baseDatos to fix the undefined identifier error.
+    std::vector<Item> baseDatos; // Declare baseDatos globally
+
+   
 int sumar(int a, int b)
 {
     return a + b;
@@ -205,6 +253,40 @@ std::vector<Item> obtenerInventarioDesdeAPI()
 }
 int main(int argc, char** argv)
 {
+        // Initialize baseDatos with data from the API response or JSON parsing
+        CURL* curl;
+        CURLcode res;
+
+        curl = curl_easy_init();
+        if (curl)
+        {
+            std::string response;
+            curl_easy_setopt(curl, CURLOPT_URL, API_ENDPOINT);
+            curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, writefunction);
+            curl_easy_setopt(curl, CURLOPT_WRITEDATA, &response);
+            res = curl_easy_perform(curl);
+
+            if (res != CURLE_OK)
+            {
+                std::cerr << "Error al hacer la peticion: " << curl_easy_strerror(res) << std::endl;
+            }
+            else
+            {
+                try
+                {
+                    json j = json::parse(response);
+                    baseDatos = cargarInventarioDesdeJSON(j); // Populate baseDatos
+                }
+                catch (json::exception& e)
+                {
+                    std::cerr << "Error al parsear el JSON: " << e.what() << std::endl;
+                }
+            }
+
+            curl_easy_cleanup(curl);
+        }
+
+    
     int a = 5, b = 3;
     LOG("Valores iniciales: " << a << "," << b);
 
@@ -248,7 +330,10 @@ int main(int argc, char** argv)
     LOG("Counter1: " << counter1.count);
     LOG("Counter2: " << counter2.count);
 
-    imprimirItems(baseDatos);
+    imprimirItems(baseDatos); // Visualización en consola
+
+    // Ejemplo: exportar a CSV
+    imprimirInventarioCSV(baseDatos, "inventario.csv");
     
     
     bool (*comparador)(const Item&, const Item&) = nullptr;
